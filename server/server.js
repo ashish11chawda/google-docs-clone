@@ -18,7 +18,7 @@ const io = require('socket.io')(3001, {
 io.on('connection', socket => {
     socket.on('get-document', async documentId => {
         console.log("documentId: ", documentId);
-        const document = findOrCreateDocument(documentId);
+        const document = await findOrCreateDocument(documentId);
         console.log("fetched document id: ", document._id);
         console.log("fetched document data: ", document.data);
         socket.join(documentId);
@@ -28,9 +28,10 @@ io.on('connection', socket => {
         })
         socket.on('save-document', async data => {
             console.log("save-document data: ", data);
-            await Document.findByIdAndUpdate(documentId, {data});
-            console.log("saved document: ",Document.findById(documentId).data)
-        })
+            const updatedDocument = await Document.findByIdAndUpdate(documentId, { data });
+            const fetchedDocument = await Document.findById(documentId);
+            console.log("saved document: ", fetchedDocument.data);
+          });
     })
     console.log("connected")
 })
@@ -42,8 +43,10 @@ async function findOrCreateDocument(id) {
     }
 
     const document = await Document.findById(id);
-    console.log("searched document id: ", document._id);
-    console.log("searched document data: ", document.data);
-    if(document) return document;
+    if(document) {
+        console.log("searched document id: ", document._id);
+        console.log("searched document data: ", document.data);
+        return document;
+    } 
     return await Document.create({_id: id, data: defaultValue});
 }
